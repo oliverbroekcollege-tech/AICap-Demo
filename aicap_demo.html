@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICap — Hybrid Input Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0f0f0f;
+    --paper: #fafaf8;
+    --warm: #f5f0e8;
+    --rule: #e0dbd0;
+    --mid: #9a9285;
+    --green: #2d5a3d;
+    --red: #8b2e2e;
+    --chip-bg: #f0ede6;
+    --chip-hover: #e8e3d8;
+    --chip-active: #0f0f0f;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+  }
+
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* header */
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 12px;
+  }
+
+  .headline {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .headline em {
+    font-style: italic;
+    color: var(--mid);
+  }
+
+  .subline {
+    font-size: 14px;
+    color: var(--mid);
+    line-height: 1.6;
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+
+  /* toggle */
+  .toggle-wrap {
+    display: inline-flex;
+    background: var(--warm);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 3px;
+    margin-bottom: 32px;
+    gap: 2px;
+  }
+
+  .toggle-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 7px 18px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--mid);
+    cursor: pointer;
+    transition: all .2s;
+    letter-spacing: .3px;
+  }
+
+  .toggle-btn.active {
+    background: var(--ink);
+    color: #fafaf8;
+  }
+
+  /* screens */
+  .screens {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 640px) {
+    .screens { grid-template-columns: 1fr; }
+  }
+
+  .screen {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+    display: none;
+    flex-direction: column;
+    min-height: 420px;
+  }
+
+  .screen.visible { display: flex; }
+
+  .screen-bar {
+    padding: 10px 14px;
+    background: var(--warm);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .screen-bar-label {
+    font-size: 11px;
+    color: var(--mid);
+    margin-left: 2px;
+  }
+
+  .screen-bar-tag {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: .5px;
+  }
+
+  .tag-bad  { background: #fdf0f0; color: var(--red);   border: 1px solid #f0d0d0; }
+  .tag-good { background: #eef5f0; color: var(--green); border: 1px solid #c8ddd0; }
+
+  .chat-area {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .bubble {
+    max-width: 85%;
+    padding: 9px 13px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    animation: fadeUp .3s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .bubble.ai {
+    background: var(--warm);
+    color: var(--ink);
+    border-bottom-left-radius: 3px;
+    align-self: flex-start;
+  }
+
+  .bubble.user {
+    background: var(--ink);
+    color: white;
+    border-bottom-right-radius: 3px;
+    align-self: flex-end;
+  }
+
+  .bubble.reco {
+    background: var(--warm);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    max-width: 100%;
+    padding: 12px 14px;
+    align-self: flex-start;
+  }
+
+  .reco-title {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 10px;
+  }
+
+  .reco-item {
+    padding: 7px 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 12.5px;
+  }
+
+  .reco-item:last-child { border-bottom: none; }
+  .reco-item strong { display: block; font-weight: 500; color: var(--ink); margin-bottom: 1px; }
+  .reco-item span { color: var(--mid); font-size: 12px; }
+
+  /* chips area */
+  .chips-section {
+    border-top: 1px solid var(--rule);
+    padding: 10px 14px;
+    background: white;
+  }
+
+  .chips-label {
+    font-size: 9.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 8px;
+  }
+
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .chip {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--rule);
+    background: var(--chip-bg);
+    color: var(--ink);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .chip:hover { background: var(--chip-hover); border-color: #c5bfb2; }
+  .chip.selected { background: var(--ink); color: white; border-color: var(--ink); }
+
+  /* input row */
+  .input-row {
+    border-top: 1px solid var(--rule);
+    padding: 10px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: white;
+  }
+
+  .mic-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--rule);
+    background: var(--warm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mid);
+    font-size: 12px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .text-input {
+    flex: 1;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 300;
+    padding: 7px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--rule);
+    background: var(--warm);
+    color: var(--ink);
+    outline: none;
+  }
+
+  .text-input:focus { border-color: #b5b0a5; }
+
+  .send-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: none;
+    background: var(--ink);
+    color: white;
+    cursor: pointer;
+    transition: opacity .15s;
+    flex-shrink: 0;
+  }
+
+  .send-btn:hover { opacity: .8; }
+
+  .restart-link {
+    font-size: 11px;
+    color: var(--mid);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 14px 10px;
+    display: block;
+    text-align: right;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* vertical switcher */
+  .v-switcher {
+    display: flex;
+    gap: 4px;
+    padding: 8px 14px 0;
+    border-bottom: 1px solid var(--rule);
+    background: white;
+  }
+
+  .v-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--mid);
+    cursor: pointer;
+    transition: all .15s;
+    margin-bottom: -1px;
+  }
+
+  .v-btn.active {
+    background: var(--ink);
+    color: white;
+  }
+
+  /* comparison note */
+  .comparison-note {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 640px) {
+    .comparison-note { grid-template-columns: 1fr; }
+  }
+
+  .note-col {
+    padding: 16px 18px;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+  }
+
+  .note-col.bad  { background: #fdf8f8; border-color: #edd8d8; }
+  .note-col.good { background: #f5faf7; border-color: #c8ddd0; }
+
+  .note-head {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .note-col.bad  .note-head { color: var(--red); }
+  .note-col.good .note-head { color: var(--green); }
+
+  .note-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .note-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  .note-col.bad  .note-dot { background: var(--red); }
+  .note-col.good .note-dot { background: var(--green); }
+
+  /* divider */
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 40px 0;
+  }
+
+  /* metrics */
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 500px) {
+    .metrics { grid-template-columns: 1fr; }
+  }
+
+  .metric {
+    padding: 16px 18px;
+    background: var(--warm);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+
+  .metric-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: var(--mid);
+    line-height: 1.5;
+  }
+
+  .section-head {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 16px;
+  }
+
+  .typing::after {
+    content: '▋';
+    animation: blink .7s infinite;
+    font-size: 10px;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">AICap — Question 6 & 7</p>
+  <h1 class="headline">The conversation<br>needs <em>guardrails,</em><br>not a blank mic.</h1>
+  <p class="subline">The hybrid fix: the AI leads conversationally, tap options prevent it going off-track, and voice still works. Try both sides below.</p>
+
+  <!-- TOGGLE -->
+  <div class="toggle-wrap">
+    <button class="toggle-btn active" onclick="showMode('compare')">Side by side</button>
+    <button class="toggle-btn" onclick="showMode('current')">Current only</button>
+    <button class="toggle-btn" onclick="showMode('hybrid')">Hybrid only</button>
+  </div>
+
+  <!-- SCREENS -->
+  <div class="screens" id="screens-wrap">
+
+    <!-- CURRENT -->
+    <div class="screen visible" id="screen-current">
+      <div class="screen-bar">
+        <div class="dot" style="background:var(--red)"></div>
+        <span class="screen-bar-label">Current experience</span>
+        <span class="screen-bar-tag tag-bad">Open mic</span>
+      </div>
+      <div class="chat-area" id="chat-current">
+        <div class="bubble ai">Hey! Love your hair today ✨ What are you looking for?</div>
+        <div class="bubble ai typing" id="current-typing" style="display:none">...</div>
+      </div>
+      <div class="input-row">
+        <input class="text-input" id="in-current" placeholder="Say something..." onkeydown="if(event.key==='Enter')sendCurrent()">
+        <button class="send-btn" onclick="sendCurrent()">Send</button>
+      </div>
+    </div>
+
+    <!-- HYBRID -->
+    <div class="screen visible" id="screen-hybrid">
+      <div class="screen-bar">
+        <div class="dot" style="background:var(--green)"></div>
+        <span class="screen-bar-label">Proposed: hybrid mode</span>
+        <span class="screen-bar-tag tag-good">Speak or tap</span>
+      </div>
+      <div class="v-switcher" id="v-switcher">
+        <button class="v-btn active" onclick="setV('frag',this)">Fragrance</button>
+        <button class="v-btn" onclick="setV('cigar',this)">Cigars</button>
+        <button class="v-btn" onclick="setV('coffee',this)">Coffee</button>
+      </div>
+      <div class="chat-area" id="chat-hybrid"></div>
+      <div class="chips-section" id="chips-section" style="display:none">
+        <div class="chips-label">Or tap a suggestion</div>
+        <div class="chips-row" id="chips-row"></div>
+      </div>
+      <div class="input-row">
+        <div class="mic-icon">🎤</div>
+        <input class="text-input" id="in-hybrid" placeholder="Or type your answer..." onkeydown="if(event.key==='Enter')sendHybrid()">
+        <button class="send-btn" onclick="sendHybrid()">Send</button>
+      </div>
+      <button class="restart-link" onclick="restartHybrid()">Restart</button>
+    </div>
+
+  </div>
+
+  <!-- COMPARISON NOTE -->
+  <div class="comparison-note" id="comparison-note">
+    <div class="note-col bad">
+      <div class="note-head">What goes wrong</div>
+      <div class="note-item"><div class="note-dot"></div><span>Opens with appearance comment before learning anything</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>Blank mic in a noisy store — transcription fails</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>Conversation drifts, shopper disengages</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>No way to correct a misheard response</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>No clear path to a recommendation</span></div>
+    </div>
+    <div class="note-col good">
+      <div class="note-head">What the fix does</div>
+      <div class="note-item"><div class="note-dot"></div><span>Opens with the shopper's outcome, not their appearance</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>Tap options as guardrails — works even if mic fails</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>Every question moves toward a recommendation</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>Back button to revise any previous answer</span></div>
+      <div class="note-item"><div class="note-dot"></div><span>Three turns. Done. The shopper feels understood.</span></div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- METRICS -->
+  <p class="section-head">How we measure success</p>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val">&gt; 85%</div>
+      <div class="metric-label">Comprehension accuracy target — shopper confirms "yes, that's what I meant" within 30 days</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">vs. baseline</div>
+      <div class="metric-label">Premium conversion rate measured against store's own SKU baseline over same period</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────
+const VERTICALS = {
+  frag: {
+    steps: [
+      { q: "What brings you in today?",      chips: ["Buying a gift", "Treating myself", "Special event"] },
+      { q: "What kind of feeling?",           chips: ["Fresh and light", "Warm and rich", "Woody and earthy", "Floral"] },
+      { q: "Budget in mind?",                 chips: ["Under $80", "$80–150", "$150 or more"] },
+    ],
+    reco: [
+      { name: "Byredo Bal d'Afrique",        note: "Warm, complex, universally appealing." },
+      { name: "Maison Margiela Replica",     note: "Jazz Club — smoky, warm, evenings." },
+      { name: "Le Labo Santal 33",           note: "Clean, woody, quietly confident." },
+    ]
+  },
+  cigar: {
+    steps: [
+      { q: "How much time do you have?",     chips: ["About 30 minutes", "Around an hour", "Two hours or more"] },
+      { q: "Strength preference?",           chips: ["Mild and smooth", "Medium bodied", "Full and bold"] },
+      { q: "What's the occasion?",           chips: ["Everyday smoke", "Celebrating something", "Buying as a gift"] },
+    ],
+    reco: [
+      { name: "Arturo Fuente Hemingway",     note: "Medium-full, complex, exceptional value." },
+      { name: "Padron 1964 Anniversary",     note: "Full bodied, rich — worth every dollar." },
+      { name: "Macanudo Cafe Hyde Park",     note: "Mild, smooth, great starting point." },
+    ]
+  },
+  coffee: {
+    steps: [
+      { q: "How do you brew at home?",       chips: ["Pour over", "Espresso machine", "French press"] },
+      { q: "What flavors do you gravitate toward?", chips: ["Bright and fruity", "Chocolatey and smooth", "Nutty and balanced"] },
+      { q: "Roast preference?",              chips: ["Light", "Medium", "Dark"] },
+    ],
+    reco: [
+      { name: "Ethiopia Yirgacheffe Natural", note: "Light, blueberry and jasmine. Pour over ideal." },
+      { name: "Colombia Huila Washed",        note: "Medium, milk chocolate, espresso-friendly." },
+      { name: "Guatemala Antigua",            note: "Medium-dark, nutty. French press perfect." },
+    ]
+  }
+};
+
+const BAD_RESPONSES = [
+  "That's interesting! Can you tell me more? What scent family, or is it for someone special?",
+  "Got it! And what's your budget? Also — do you want something bold or more understated?",
+  "Hmm, I love that! Are you thinking day or night? And what's your usual vibe?",
+  "So many great options... it's really hard to say without knowing a bit more about you.",
+];
+
+// ── STATE ─────────────────────────────────────────────────────
+let curV = 'frag';
+let step = 0;
+let badIdx = 0;
+
+// ── CURRENT SIDE ─────────────────────────────────────────────
+function sendCurrent() {
+  const inp = document.getElementById('in-current');
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  addBubble('chat-current', val, 'user');
+  const typing = document.getElementById('current-typing');
+  typing.style.display = 'block';
+  setTimeout(() => {
+    typing.style.display = 'none';
+    addBubble('chat-current', BAD_RESPONSES[badIdx++ % BAD_RESPONSES.length], 'ai');
+  }, 900);
+}
+
+// ── HYBRID SIDE ───────────────────────────────────────────────
+function restartHybrid() {
+  step = 0;
+  document.getElementById('chat-hybrid').innerHTML = '';
+  document.getElementById('chips-section').style.display = 'none';
+  setTimeout(() => {
+    addBubble('chat-hybrid', VERTICALS[curV].steps[0].q, 'ai');
+    showChips(VERTICALS[curV].steps[0].chips);
+  }, 150);
+}
+
+function setV(v, btn) {
+  curV = v;
+  document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  restartHybrid();
+}
+
+function showChips(chips) {
+  const sec = document.getElementById('chips-section');
+  const row = document.getElementById('chips-row');
+  sec.style.display = 'block';
+  row.innerHTML = '';
+  chips.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = c;
+    b.onclick = () => handleAnswer(c, b);
+    row.appendChild(b);
+  });
+}
+
+function hideChips() {
+  document.getElementById('chips-section').style.display = 'none';
+}
+
+function handleAnswer(text, el) {
+  if (el) {
+    document.querySelectorAll('#chips-row .chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+  setTimeout(() => {
+    addBubble('chat-hybrid', text, 'user');
+    hideChips();
+    step++;
+    setTimeout(() => advance(), 500);
+  }, 150);
+}
+
+function sendHybrid() {
+  const inp = document.getElementById('in-hybrid');
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  handleAnswer(val, null);
+}
+
+function advance() {
+  const v = VERTICALS[curV];
+  if (step < v.steps.length) {
+    addBubble('chat-hybrid', v.steps[step].q, 'ai');
+    showChips(v.steps[step].chips);
+  } else {
+    showReco();
+  }
+}
+
+function showReco() {
+  const chat = document.getElementById('chat-hybrid');
+  addBubble('chat-hybrid', "Based on what you told me, here are your top picks.", 'ai');
+  setTimeout(() => {
+    const div = document.createElement('div');
+    div.className = 'bubble reco';
+    div.innerHTML = `<div class="reco-title">Recommended for you</div>` +
+      VERTICALS[curV].reco.map(r =>
+        `<div class="reco-item"><strong>${r.name}</strong><span>${r.note}</span></div>`
+      ).join('');
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }, 600);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function addBubble(chatId, text, type) {
+  const chat = document.getElementById(chatId);
+  const d = document.createElement('div');
+  d.className = `bubble ${type}`;
+  d.textContent = text;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ── MODE TOGGLE ───────────────────────────────────────────────
+function showMode(mode) {
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const cur = document.getElementById('screen-current');
+  const hyb = document.getElementById('screen-hybrid');
+  const wrap = document.getElementById('screens-wrap');
+  const note = document.getElementById('comparison-note');
+
+  if (mode === 'compare') {
+    cur.classList.add('visible');
+    hyb.classList.add('visible');
+    wrap.style.gridTemplateColumns = '1fr 1fr';
+    note.style.display = 'grid';
+  } else if (mode === 'current') {
+    cur.classList.add('visible');
+    hyb.classList.remove('visible');
+    wrap.style.gridTemplateColumns = '1fr';
+    note.style.display = 'none';
+  } else {
+    cur.classList.remove('visible');
+    hyb.classList.add('visible');
+    wrap.style.gridTemplateColumns = '1fr';
+    note.style.display = 'none';
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+restartHybrid();
+</script>
+</body>
+</html>
